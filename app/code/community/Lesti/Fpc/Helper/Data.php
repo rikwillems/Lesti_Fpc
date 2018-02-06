@@ -7,7 +7,7 @@
  * @link      https://github.com/GordonLesti/Lesti_Fpc
  * @package   Lesti_Fpc
  * @author    Gordon Lesti <info@gordonlesti.com>
- * @copyright Copyright (c) 2013-2014 Gordon Lesti (http://gordonlesti.com)
+ * @copyright Copyright (c) 2013-2016 Gordon Lesti (http://gordonlesti.com)
  * @license   http://opensource.org/licenses/OSL-3.0 Open Software License (OSL 3.0)
  */
 
@@ -77,7 +77,10 @@ class Lesti_Fpc_Helper_Data extends Lesti_Fpc_Helper_Abstract
             $request = Mage::app()->getRequest();
             $params = array('host' => $request->getServer('HTTP_HOST'),
                 'port' => $request->getServer('SERVER_PORT'),
-                'full_action_name' => $this->getFullActionName());
+                'secure' => Mage::app()->getStore()->isCurrentlySecure(),
+                'full_action_name' => $this->getFullActionName(),
+                'ajax' => $request->isAjax(),
+              );
             $uriParams = $this->_getUriParams();
             foreach ($request->getParams() as $requestParam =>
                      $requestParamValue) {
@@ -105,6 +108,7 @@ class Lesti_Fpc_Helper_Data extends Lesti_Fpc_Helper_Abstract
                 array('parameters' => $parameters)
             );
             $params = $parameters->getValue();
+
 
             Mage::register(self::REGISTRY_KEY_PARAMS, serialize($params));
         }
@@ -173,12 +177,12 @@ class Lesti_Fpc_Helper_Data extends Lesti_Fpc_Helper_Abstract
             }
 
             $cache = Mage::app()->getCache();
-            $cacheId = SELF::CACHE_KEY_LAYERED_NAVIGATION_ATTRIBUTES.'_'.$filterableField;
-            $cacheTags = array('FPC', SELF::CACHE_KEY_LAYERED_NAVIGATION_ATTRIBUTES);
+            $cacheId = self::CACHE_KEY_LAYERED_NAVIGATION_ATTRIBUTES.'_'.$filterableField;
+            $cacheTags = array('FPC', self::CACHE_KEY_LAYERED_NAVIGATION_ATTRIBUTES);
             $layeredNavigationAttributesCache = $cache->load($cacheId);
 
             if (!$layeredNavigationAttributesCache) {
-                $attributeCollection->addFieldToFilter($filterableField, true);
+                $attributeCollection->addFieldToFilter($filterableField, array('in' => array(1,2)));
                 foreach ($attributeCollection as $attribute) {
                     $layeredNavigationAttributes[] = $attribute->getAttributeCode();
                 }
@@ -238,5 +242,20 @@ class Lesti_Fpc_Helper_Data extends Lesti_Fpc_Helper_Abstract
         return $request->getRequestedRouteName() . $delimiter .
         $request->getRequestedControllerName() . $delimiter .
         $request->getRequestedActionName();
+    }
+
+    /**
+     * @param Mage_Core_Controller_Response_Http $response
+     * @return string
+     */
+    public function getContentType(\Mage_Core_Controller_Response_Http $response)
+    {
+        foreach ($response->getHeaders() as $header) {
+            if (isset($header['name']) && $header['name'] === 'Content-Type' && isset($header['value'])) {
+                return $header['value'];
+            }
+        }
+
+        return 'text/html; charset=UTF-8';
     }
 }

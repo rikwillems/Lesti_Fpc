@@ -3,8 +3,8 @@ language: php
 sudo: false
 
 php:
-  - 5.3
-  - 5.4
+  - 5.5
+  - 5.6
 
 env:
   - MAGE=magento-1-9-1-0
@@ -14,8 +14,7 @@ env:
   - MAGE=magento-1-5-1-0
 
 install:
-  - cp -f .travis/composer.json composer.json
-  - composer install --dev
+  - composer install --dev --prefer-dist --no-scripts
   - curl https://gordonlesti.com/"$MAGE".tar.gz | tar xz
   - mv $MAGE magento
   - cd magento
